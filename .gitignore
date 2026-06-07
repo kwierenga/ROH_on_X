@@ -1,0 +1,9 @@
+# Auto-downloaded recombination maps (regenerated on first run by xroh_sim.py)
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Quarantined off-topic / misfiled PDFs
+docs/_misfiled/

@@ -1,0 +1,113 @@
+<html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="mystyle.css">
+<title>KinInbcoefX README</title>
+</head>
+
+<body>
+
+<h2 style = "text-align: center">KinInbcoefX README</h2>
+
+<p>
+KinInbcoefX is a C++ program that recursively calculates 
+X-chromosome kinship and inbreeding coefficients  
+in arbitrarily related individuals based on pedigree and sex 
+information.
+</p>
+
+<p>
+We use the following definition: the X-chromosome kinship coefficient, C_AB, for individuals A and B, is the probability that a pair of 
+alleles chosen at random, one from A and one from B, at a non-pseudoautosomal locus on the X-chromosome, is identical by descent. 
+For instance, by this definition, C_AB=.25 for an outbred mother-daughter pair, .5 for an outbred 
+mother-son pair, .5 for an outbred father-daughter pair, and 0 for an 
+outbred father-son pair. The X-chromosome inbreeding coefficient for a 
+male is always defined to be 1, regardless of whether there is  
+inbreeding.  The X-chromosome inbreeding coefficient 
+for a female is defined to be the X-chromosome kinship coefficient 
+between her parents (which would be 0 for an outbred female). 
+</p>
+
+<p>
+The program takes the following as input: 
+
+<ol>
+	<li> pedigreefile containing the pedigree and sex information for all individuals
+	<li> listfile containing a list of individuals for whom X-chromosome inbreeding and kinship coefficients will be calculated
+	<li> name of the outputfile in which to store the output
+	<li> name of the errorfile in which to store information about a particular error in pedigreefile, namely the designation of a father as female or a mother as male 
+</ol>
+ 
+</p>
+
+<p>
+The formats of the input and output files 
+are provided in Input.htm and Output.htm to which you can link from the  
+main KinInbcoefX page. The main page also links to Download.htm, where all files related to the program are available for download. 
+These files include descriptions of input and output, a README file, sample test files, the source code, and pre-compiled code. 
+</p>
+
+<ol>
+	<li> 
+		<p> Usage  </p> 
+		<p> On the command line, following "./KinInbcoefX ", four arguments should be entered in the following order: 
+			name of the pedigreefile, a space, name of the listfile, a space, name of the outputfile, a space, and name of the errorfile. </p>
+	<li> 
+		<p> Compilation </p> 
+		<p> A C++ compiler should be used to compile the program.
+			When using the g++ compiler, type: g++ KinInbcoefX.c -o KinInbcoefX </p>
+	<li>
+		<p> Example</p>
+		<p> There are two examples using correct input. The first example is more complicated than the second example.
+		    The second example is the same as that given in webpages Input.htm and Output.htm, which are accessible from the 
+			KinInbcoefX main page.
+		</p>	
+		<p> Input files "pedtestX", "listtestX", and "outtestX" correspond to the first example.
+			Input files "pedtestX2", "listtestX2", and "outtestX2" correspond to the second example.
+			All these example files can be found in Download.htm, to which you can link from the main page.
+	    </p>
+		<p>
+			To run the program using the first example input files, type:
+		</p>
+		
+		<p>
+			./KinInbcoefX pedtestX listtestX out error
+		</p>
+		
+		<p>
+			and compare the results in the "out" file with the results in the "outtestX" file. error should be an empty file.
+		</p>
+	    <p>
+			Similarly, to run the program using the second example input files, type:
+		</p>
+		
+		<p>
+			./KinInbcoefX pedtestX2 listtestX2 out2 error2
+		</p>
+		
+		<p>
+			and compare the results in the "out2" file with the results in the "outtestX2" file. error2 should be an empty file.
+		</p>
+		
+		<p>
+		There is one example that demonstrates what a non-blank errorfile would look like. To run the program using second example listfile
+		and incorrect second example pedigreefile, type:
+		</p>
+		
+		<p>
+		./KinInbcoefX pedtestX2.Error listtestX2 out2.Error error2.Error
+		</p>
+		
+		<p>
+		Since the program terminates when an error occurs, out2.Error should be an empty file. Descriptions of errors
+		should be printed to the screen, and information on errors should be contained in error2.Error, which should be the same
+		as the provided file errortestX2.Error.
+		</p>		
+</ol>
+
+<p style = "text-align: center">
+<a href="index.htm">Back to KinInbcoefX Main Page</a>
+</p>
+
+</body>
+</html>
