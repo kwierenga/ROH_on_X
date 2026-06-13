@@ -26,7 +26,7 @@ The X inbreeding coefficient of a female equals the X-kinship coefficient betwee
 Consequences:
 
 - The autosomes are blind to type (all ¼).
-- The **F_X / F_auto ratio** is ≈2 for parent–child and ≈1 for sib–sib → separates sib–sib from the parent–child pair.
+- The **F_X / F_auto ratio** is ≈2 for parent–child and ≈1 for sib–sib *on average*. This is a clean separation of the population *means*, but per single genome it is only moderate: an exact map-based likelihood classifier (see Methods) separates father–daughter from sib–sib at ~0.74 accuracy, because per-genome F_X is high-variance on a short, female-only-recombining chromosome.
 - Father–daughter and mother–son share F_X ≈ ½ and differ only in segment structure: father–daughter has one recombination-free X copy (the intact paternal X), so its autozygous tracts are bounded by a *single* maternal meiosis; mother–son’s two copies are separated by *two* meioses.
 
 ## Methods

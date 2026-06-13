@@ -1,0 +1,199 @@
+# Autosomes give the loop depth, the X gives the sex-path: resolving the *type* of first-degree consanguinity from a single female genome
+
+*Methods note — v1.0 (2026-06-13). All numbers are simulation results reproduced by `xroh_sim.py` and `xroh_likelihood.py` in this repository, on empirical sex-specific recombination maps (Bhérer 2017; deCODE/Halldorsson 2019). References marked “verify” need a final citation check. This note extends and supersedes the earlier X-only draft (`X ROH incest type methods note.md`).*
+
+---
+
+## Abstract
+
+Genome-wide runs of homozygosity (ROH) reliably reveal that a child’s parents are first-degree relatives, but the autosomal inbreeding coefficient is **F ≈ ¼ for all three first-degree unions** — father–daughter (FD), mother–son (MS), and brother–sister (SS) — so the autosomes cannot, on their face, say *which* union produced the child. We show that the genome nonetheless carries this information in two complementary places. (1) On the **autosomes**, the ROH *segment architecture* differs because the consanguinity loop spans a different number of meioses (g = 3 for parent–child, g = 4 for sib–sib) and a different mix of male and female meioses; this orders the unions by ROH count (FD < MS < SS) even at identical F. (2) On the **X chromosome** of a female offspring, autozygosity depends on the *sex-path* of the loop, because a father transmits his X intact to daughters and sons inherit no X from their father: expected X autozygosity is **½ (FD), ½ (MS), ¼ (SS)**. We formalise the X signal as an exact, closed-form likelihood read directly from the recombination map (no Monte Carlo), prove that the FD-vs-MS likelihood ratio collapses to the junction *count* (the spatial map cancels), and validate the whole framework against gene-dropping simulation on two independent maps. Combining autosomes and X, single-genome classification accuracies are **≈0.87 (FD vs SS), ≈0.77 (MS vs SS), and ≈0.75 (FD vs MS)**. The forensically and clinically decisive contrast — father–daughter versus sibling — is the *best* resolved; father–daughter versus mother–son is the irreducible hard core, breakable in practice only by genotyping a relative (which lifts it to ≈0.91). The discriminating signal lives partly on the one chromosome clinical pipelines routinely discard.
+
+---
+
+## 1. Background
+
+SNP/chromosomal microarray and exome/genome sequencing are first-tier tests for developmental delay, intellectual disability and congenital anomalies, and they incidentally reveal parental relatedness through genome-wide ROH. Standard practice estimates the *degree* of relatedness from the autosomal ROH burden (~25% of the genome autozygous → first-degree) and, following ACMG guidance, deliberately does **not** assign the specific parental relationship, because array data are not a paternity test and total ROH burden maps imperfectly to a named relationship (Grote 2012; Fan 2013; Bennett 2021).
+
+This conservatism is well founded for the autosomes alone, where all first-degree unions share F ≈ ¼. But two features of inheritance break the symmetry the autosomal *burden* hides:
+
+- **Loop depth and meiosis sex (autosomes).** The autozygous tracts in an inbred individual are fragments of an ancestral chromosome broken by recombination accumulated over the meioses of the consanguinity loop. The number of those meioses, and whether each was male or female (female maps are ~1.6× longer), shapes the ROH *length spectrum* even when total F is fixed.
+- **X transmission asymmetry (sex chromosome).** A father passes his single X **intact** to every daughter (no recombination); a son inherits **no** X from his father; a mother passes a recombined X. So in a female child, X autozygosity depends on the **sexes along the consanguinity loop**, not only its depth.
+
+We quantify both, give the X signal an exact likelihood, and show the two sources are complementary.
+
+That the sex-path leaves an X signature is established at the **population** scale: Cotter et al. (2024, *G3*) showed in a diploid coalescent model that, across the four first-cousin marriage types, **matrilateral** consanguinity raises the population-mean X-to-autosome ROH ratio while **patrilateral** consanguinity lowers it (“patrilateral consanguinity produces no ROH on the X chromosome”), and confirmed a ~2× X:autosome ROH relationship in aggregate human data. The present work moves the same sex-path principle from the **population mean of cousin marriages** to the **realised single genome of a first-degree union**, where the signal is strongest and where the clinical/forensic question of *type* actually arises.
+
+---
+
+## 2. Theory
+
+### 2.1 The X: sex-path determines F_X
+
+For a female child, the **paternal X is transmitted intact** and derives entirely from the paternal grandmother; the **maternal X** is a single-meiosis recombinant of the mother’s two X’s. Tracing the three first-degree pedigrees gives the expected X inbreeding coefficient (= the X-kinship coefficient of the parents; McPeek framework; Grossman & Eisen 1989):
+
+| Union (female offspring) | Autosomal F | Expected F_X |
+|---|---|---|
+| Father × daughter (FD) | ¼ | **½** |
+| Mother × son (MS) | ¼ | **½** |
+| Brother × sister (SS) | ¼ | **¼** |
+
+Mechanistically, the child’s X autozygosity track A(x) (1 = the two X copies are identical-by-descent at x) is:
+
+- **FD:** one symmetric telegraph — the maternal recombinant alternates between the grandfather’s X (autozygous, because the paternal copy *is* that X, intact) and the grandmother’s X. Switches at the crossover intensity λ(x) of one female meiosis. P(A=1)=½.
+- **MS:** both X copies are independent single-meiosis recombinants of the **same** mother; A=1 where they coincide. A flips when *either* meiosis crosses over → intensity 2λ(x). P(A=1)=½.
+- **SS:** the grandfather’s X enters only on the maternal side and can never be autozygous, forcing guaranteed non-autozygous blocks; A=1 requires the maternal transmission to be on the grandmother-derived side *and* the two grandmother homologs to coincide. P(A=1)=¼.
+
+### 2.2 An exact likelihood from the map (no simulation)
+
+Crossovers along a female meiosis form an **inhomogeneous Poisson process** whose intensity λ(x) *is* the recombination map. The likelihood of an observed junction configuration {x₁…x_m} under a process of intensity c·λ(x) is the standard
+L = exp(−c∫λ) · Π_i c·λ(x_i).
+Hence:
+
+- **FD vs MS likelihood ratio.** Both intensities are the *same* λ(x), scaled by 1 (FD) vs 2 (MS):
+  **L_FD / L_MS = exp(Λ) / 2^m**, Λ = ∫λ ≈ 1.76 Morgans.
+  The λ(xᵢ) **cancel**: for FD vs MS the fine-grained map adds nothing beyond the junction *count* m. This is an exact statement of why FD vs MS is irreducibly hard from a single genome — it is the discrimination of Poisson(1.76) from Poisson(3.53) on one integer.
+- **FD/MS vs SS.** SS has a different total intensity *and* a different structure (it is an 8-state hidden process over the latent homolog telegraphs, not a simple telegraph). The map does **not** cancel; the likelihood uses the full spatial signal. This is the pair the X resolves well.
+
+The X-only Bayes-optimal classifier is therefore an explicit likelihood, not a black box (implemented in `xroh_likelihood.py`).
+
+### 2.3 The autosomes: loop depth and meiosis sex
+
+An autozygous tract whose two copies coalesce through g meioses has mean genetic length ≈ 100/g cM. For first-degree unions:
+
+- **FD** (common ancestor = the grandfather G): paternal allele 1 meiosis from G, maternal allele 2 → **g = 3**.
+- **MS** (common ancestor = the mother M): maternal allele 1 meiosis, paternal 2 → **g = 3**.
+- **SS** (common ancestors = both grandparents): each side 2 meioses → **g = 4**.
+
+So sib–sib offspring have **shorter, more numerous** autosomal ROH than parent–child offspring, at the same total F=¼. Within the g=3 parent–child class, FD and MS differ in the **sexes** of the loop meioses: FD = 2 male + 1 female; MS = 2 female + 1 male. Because female autosomal maps are ~1.57× longer than male, the MS loop accumulates ~17% more crossovers → MS ROH are slightly shorter and more numerous than FD. This is a faint autosomal trace of the *same* sex-path asymmetry the X shows strongly.
+
+### 2.4 The demographic baseline, and why it barely matters at first degree
+
+A real X:autosome ROH comparison sits on top of a demographic floor. Cotter et al. (2024) show that **even with no recent consanguinity, the X carries ~2× the autosomal ROH/IBD level**, because the X has a smaller effective population size (N_e,X ≈ ¾ N_e,A, further shifted by sex-biased demography) and hence shorter coalescence times. This baseline is the central confound for *population* inference from cousin marriage, where the loop contribution is small and must be separated from N_e,X effects.
+
+At **first degree it is essentially negligible**: the loop adds F ≈ ¼ on the autosomes and F_X up to ½ — one to two orders of magnitude above the background autozygosity that the N_e,X factor modulates — so the union-type signal is read against a floor it dwarfs. Two consequences follow. First, the demographic identifiability problem that complicates Paper-B-style population scans does not materially degrade single-genome union typing. Second, the per-genome F_X/F_auto ratios we predict (2 for parent–child, **1 for sib–sib**) straddle Cotter’s ~2 demographic baseline: a sib–sib offspring’s recent-loop ratio of ~1 lies *below* the no-consanguinity population expectation, a reminder that the sex-path — not just depth — sets the ratio.
+
+---
+
+## 3. Methods
+
+**Gene-dropping.** Founder haplotypes were assigned unique labels and dropped through each pedigree with sex-specific recombination: female meioses used the empirical female map, male meioses the male map (X: males transmit intact; sons receive no paternal X). Crossovers were drawn as an (inhomogeneous) Poisson process in genetic distance (Haldane; an optional gamma-renewal interference model is available). Autozygosity was scored as the genome fraction where the two copies carried the same founder label. PAR1/PAR2 excluded. Maps: Bhérer 2017 refined female X (GRCh37, 176.3 cM) and sex-specific autosomes; cross-checked on the deCODE/Halldorsson 2019 **maternal** chrX (GRCh38), built from the UCSC `recombMat` track and integrated to 175.88 cM (agreeing with Bhérer to 0.4 cM).
+
+**X likelihood (`xroh_likelihood.py`).** The X is binned (0.5 Mb); per bin the single-meiosis switch probability is p_i = ½(1−e^{−2μ_i}), μ_i the local genetic length in Morgans. FD and MS likelihoods are closed-form telegraph products (flip probability p_i and 2p_i(1−p_i) respectively); SS is an 8-state HMM forward pass over the latent homolog telegraphs (V_B, V_Z, W_Z), all exact given the binning. Classification uses the maximum-posterior union at equal priors.
+
+**Autosomal ROH.** All 22 autosomes were gene-dropped through each pedigree; ROH segments ≥1.5 Mb were extracted per genome and counted/measured. Pairwise discriminability of the ROH count was summarised as d′ and the corresponding single-feature Bayes accuracy Φ(d′/2). Whole-genome accuracies combine the autosomal and X signals by adding d′ in quadrature (independence across chromosome sets; a joint simulation would refine these and is noted as future work).
+
+**Reproducibility.** `python xroh_sim.py` reproduces the catalogue, detection, tails, genotyped-relative experiment and interference sweep; `python xroh_likelihood.py` reproduces the exact-likelihood classification on both maps.
+
+---
+
+## 4. Results
+
+### 4.1 Means match theory (validation)
+Simulated F_X = 0.50 / 0.50 / 0.25 (FD/MS/SS) and F_auto = 0.25 for all three (outbred control 0). The full first/second/third-degree catalogue reproduces the analytic X/autosome ratios {0,1,2,3}. This convergence is the unit test that the sex-specific X transmission is coded correctly.
+
+### 4.2 The X separates the sex-path
+The exact map-based likelihood classifier gives, on a single female X (0.5 Mb bins, n=2000/union):
+
+| pair | Bhérer X | deCODE X |
+|---|---|---|
+| FD vs SS | 0.736 | 0.741 |
+| MS vs SS | 0.715 | 0.713 |
+| FD vs MS | 0.710 | 0.712 |
+| 3-way | 0.573 | 0.570 |
+
+Two independent maps agree to ≈0.005 — the conclusion is map-robust. FD vs MS reaches exactly the analytic count-only ceiling (0.71), confirming §2.2: the spatial map cannot help that pair. The full-information tail is itself diagnostic: **P(F_X > 0.99) = 9.3% (FD) vs 2.0% (MS) vs 0.2% (SS)** — a near-fully-homozygous X is a strong FD signature (and explains the Sund 2013 “entirely homozygous X” girl).
+
+### 4.3 The autosomes give the loop depth
+Autosomal ROH (≥1.5 Mb; n=250/union; sex-specific maps):
+
+| union | g | F_auto | # ROH | mean length |
+|---|---|---|---|---|
+| FD | 3 | 0.252 | 26.3 | 26.8 Mb |
+| MS | 3 | 0.253 | 30.0 | 23.6 Mb |
+| SS | 4 | 0.253 | 34.8 | 20.3 Mb |
+
+All three share F=¼, yet the ROH **count orders them FD < MS < SS**. The MS/FD count ratio is 1.14 (predicted 1.16 from the female:male autosomal map lengths 4087:2606 cM) — the sex-specific-recombination effect of §2.3, confirmed. ROH count alone gives FD vs SS = 0.82, MS vs SS = 0.69, FD vs MS = 0.65.
+
+### 4.4 Whole genome: the decisive contrast is the best resolved
+Combining autosomes and X (quadrature):
+
+| pair | autosomes | X | **combined** |
+|---|---|---|---|
+| FD vs SS | 0.82 | 0.74 | **≈0.87** |
+| MS vs SS | 0.69 | 0.72 | **≈0.77** |
+| FD vs MS | 0.65 | 0.71 | **≈0.75** |
+
+Sib–sib is well separated from both parent–child types; **father–daughter versus mother–son is the irreducible hard core**. In casework a genotyped birth mother breaks even that pair, lifting FD vs MS to **0.91**, because the child’s paternal X is an *intact* maternal homolog under FD but a *recombinant mosaic* of the mother’s two homologs under MS (an observable switch count of ~0 vs ~Poisson). Crossover interference (gamma-renewal, ν=2.6–4.3) leaves the means at ½/½/¼ but tightens segment spacing, modestly raising the FD/MS ceiling (0.69→0.76) while shrinking the FD homozygous-X tail (0.093→0.014).
+
+---
+
+## 5. Relationship to prior work
+
+The closest prior art is Cotter, Severson, Kang, Godrej, Carmi & Rosenberg (2024, *G3* 14(2):jkad264). In a **diploid coalescent model**, they relate ROH and IBD-sharing at a site to coalescence time (TMRCA), which they obtain analytically as a function of consanguinity rates, and compare the autosomal and X-chromosomal models across a population in which a fraction of matings are first-cousin unions of four types — patrilateral-parallel, patrilateral-cross, matrilateral-parallel, matrilateral-cross (their Fig. 1). They predict that (i) X-IBD rises with X-ROH as consanguinity increases; (ii) the X carries ~2× the autosomal ROH/IBD **even without consanguinity**, from its smaller N_e and shorter coalescence time; and (iii) **matrilateral** consanguinity raises the X:autosome ratio above this baseline while **patrilateral** consanguinity lowers it. In genome-wide SNP data from human populations with estimated consanguinity, they find each 1% rise in autosomal ROH is associated with a **2.1% rise in X-chromosomal ROH** (1.6% for IBD), close to the ~2× their model predicts.
+
+We use these results in three ways. We adopt their **demographic baseline** (prediction ii) as the floor against which first-degree signals are read (§2.4) and show it is negligible at first degree. We treat their **matrilateral-vs-patrilateral population result** (prediction iii) as the cousin-level, population-mean instance of the same sex-path mechanism whose first/second-degree, single-genome extension is our catalogue (the discrete X/autosome ratios {0,1,2,3}; their “patrilateral → no X ROH” is the cousin analogue of our X=0 configurations, e.g. fathers-are-brothers). And we position our work as **complementary and non-overlapping**: it characterises the **realised single-genome distribution** (and its tail) rather than population means; treats **first-degree** unions, where the sex-path signal is strongest and where they do not go; provides an **exact map-based likelihood** with the FD/MS cancellation result, where their coalescent treatment models only expectations (no variance) and no ROH-*calling*; and adds the **autosomal loop-depth/meiosis-sex** axis and its joint use with the X. The X-kinship coefficients underlying §2.1 trace to Grossman & Eisen (1989) and the McPeek-group derivations (Thornton 2012). Clinically, the autosomal-degree literature (Fan 2013; Sund 2013; Grote 2012; Bennett 2021) and ACMG guidance explicitly *avoid* naming the relationship and, in Sund’s case, *recommend excluding the X* — the chromosome that carries the sex-path signal.
+
+The autosomal “is this ROH real autozygosity?” calibration (length → recombination- and ancestry-aware Bayes factor) is a **separate** problem handled in a companion project; here the loop-depth result is used only to *interpret* called ROH, and that calibration should be cited, not re-derived.
+
+### 5.1 What is new here, and what is inherited
+
+We are explicit about the boundary, because two of the building blocks are not ours.
+
+**Inherited (cite, do not claim):**
+- *The expected values F_X = ½/½/¼.* These follow from established X-coancestry coefficients (Grossman & Eisen 1989; Thornton 2012) — they are an evaluation of known theory, not a new derivation.
+- *The autosomal depth law (mean ROH ≈ 100/g cM; sib–sib g=4 vs parent–child g=3).* This is standard ROH/IBD-relationship inference (Thompson; Ceballos 2018; Ringbauer 2021) and underpins existing relationship estimators.
+- *Population-mean X:autosome ROH under consanguinity type.* Owned by Cotter et al. 2024 for first cousins.
+
+**New contributions (specific):**
+1. **Single-genome union *typing* of first-degree unions from the X sex-path.** Prior X work types *degree* or, in forensics, detects incest while omitting mother–son; the population work gives means only. Casting FD/MS/SS as a single-genome classification with an explicit posterior is, to our search, unaddressed.
+2. **An exact, closed-form union likelihood read directly from the recombination map** (inhomogeneous-Poisson/HMM; `xroh_likelihood.py`), replacing simulation or black-box classifiers — and reaching the analytic Bayes ceiling.
+3. **The FD-vs-MS cancellation identity: L_FD/L_MS = e^Λ/2^m.** This *proves* the spatial map is uninformative for FD vs MS — converting the empirical observation “FD vs MS is hard” into a theorem and showing exactly where the single-genome information limit sits. We are not aware of this result in the literature.
+4. **The autosomal sex-path trace.** A daughter’s *autosomal* ROH count weakly but measurably encodes whether the loop ran father-side (FD: 2 male + 1 female meiosis) or mother-side (MS: 2 female + 1 male), through the 1.57× female:male map-length ratio (predicted 1.16, observed 1.14 MS/FD count ratio). Distinguishing two unions of the *same* depth g via meiotic-sex composition is, to our knowledge, novel — and it is the autosomal echo of the X sex-path.
+5. **The joint autosome–X decomposition** (“autosomes give depth, the X gives sex-path”) with whole-genome single-genome accuracies, identifying FD-vs-SS (the forensically decisive contrast) as the *best*-resolved pair (≈0.87) and FD-vs-MS as the irreducible core.
+6. **The realised single-genome distribution and its tail as discriminators** — e.g. P(F_X>0.99) = 9.3/2.0/0.2% — versus the population means of prior work, with the mechanistic link to the Sund 2013 fully-homozygous-X case.
+7. **The genotyped-relative power result** (FD vs MS 0.69→0.91) via the intact-paternal-X switch count, defining the minimal extra data that breaks the hard pair.
+
+In short, the *framing* (single-genome typing) and three *technical* results — the cancellation identity (3), the autosomal sex-path trace (4), and the joint decomposition with the genotyped-relative fix (5,7) — are the genuinely new content; the coefficient values and the depth law are inherited and cited.
+
+---
+
+## 6. Discussion
+
+The information needed to type a first-degree union is present in a single female genome, distributed across two axes that the conventional autosomal *burden* statistic averages away. The autosomes encode the **depth and meiotic sex** of the consanguinity loop in the ROH length spectrum; the X encodes the **sex-path** in its autozygosity level and junction structure. Read jointly, they make the forensically and clinically consequential contrast — **father–daughter (an adult perpetrator and a child) versus sibling union** — the best-resolved question (≈0.87 from one genome), while father–daughter versus mother–son remains near the information limit unless a relative is genotyped.
+
+Two results are, to our knowledge, new: the **exact likelihood with the FD/MS spatial cancellation** (which converts “FD vs MS is hard” from an empirical observation into a theorem), and the **autosomal sex-path trace** (a daughter’s autosomal ROH count weakly encodes whether the loop ran father-side or mother-side, via sex-specific recombination).
+
+---
+
+## 7. Limitations
+
+- Accuracies are for a **single** genome; the whole-genome combination assumes independence across chromosome sets and uses a Gaussian d′ approximation — a joint simulation/likelihood would refine the exact numbers.
+- The genotype layer is simulated at realistic density; a real-data study (1000G/HGDP haplotypes, sex-aware X ROH calling, the companion project’s per-segment evidence model) is the next step.
+- Crossover interference is modelled as gamma-renewal; the literature ν should be fixed against Campbell 2015 (verify) before final tail/ceiling claims.
+- Elevating resolution from “first-degree” to a named union raises consent, reporting and psychosocial stakes; any application must engage the ELSI literature (Tarini 2013; Grote 2012/2014; Helm 2013; Bennett 2021).
+
+---
+
+## 8. Conclusion
+
+All first-degree unions look alike on the autosomal inbreeding coefficient, but not on the genome. The autosomal ROH spectrum reveals the loop’s depth and meiotic sex; the X chromosome of a female offspring reveals its sex-path through an exactly computable likelihood. Together they type the union from one genome — separating sibling from parent–child with ~0.87 accuracy and bounding how far father–daughter versus mother–son can ever be pushed without a second sample. The decisive signal is partly carried by the one chromosome routine pipelines set aside.
+
+---
+
+## References (verify formatting before submission)
+
+1. Bhérer C, Campbell CL, Auton A. Refined genetic maps reveal sexual dimorphism in human meiotic recombination at multiple scales. *Nat Commun* 2017;8:14994. doi:10.1038/ncomms14994
+2. Halldorsson BV, et al. Characterizing mutagenic effects of recombination through a sequence-level genetic map. *Science* 2019;363:eaau1043. doi:10.1126/science.aau1043 (deCODE maternal chrX via UCSC `recombMat` track).
+3. Cotter DJ, Severson AL, Kang JTL, Godrej HN, Carmi S, Rosenberg NA. Modeling the effects of consanguinity on autosomal and X-chromosomal runs of homozygosity and identity-by-descent sharing. *G3* 2024;14(2):jkad264. doi:10.1093/g3journal/jkad264
+4. Grossman M, Eisen EJ. Inbreeding, coancestry, and covariance between relatives for X-chromosomal loci. *J Hered* 1989;80(2):137–142. doi:10.1093/oxfordjournals.jhered.a110812 (PMID 2926116).
+5. Thornton T, Zhang Q, Cai X, Ober C, McPeek MS. XM: association testing on the X-chromosome in case-control samples with related individuals. *Genet Epidemiol* 2012;36(5):438–450. doi:10.1002/gepi.21638
+6. Ceballos FC, Joshi PK, Clark DW, Ramsay M, Wilson JF. Runs of homozygosity: windows into population history and trait architecture. *Nat Rev Genet* 2018;19:220–234. doi:10.1038/nrg.2017.109
+7. Fan YS, et al. Frequent detection of parental consanguinity in children with developmental disorders by a combined CGH and SNP microarray. *Mol Cytogenet* 2013;6:38. doi:10.1186/1755-8166-6-38
+8. Sund KL, et al. Regions of homozygosity identified by SNP microarray analysis aid in the diagnosis of autosomal recessive disease and incidentally detect parental blood relationships. *Genet Med* 2013;15:70–78. doi:10.1038/gim.2012.94
+9. Grote L, et al. Variability in laboratory reporting practices for regions of homozygosity. *Genet Med* 2012;14:971–976. doi:10.1038/gim.2012.83
+10. Tarini BA, et al. The perils of SNP microarray testing: uncovering unexpected consanguinity. *Pediatr Neurol* 2013;49:50–53. doi:10.1016/j.pediatrneurol.2013.03.008
+11. Helm BM, et al. Three clinical experiences with SNP array results consistent with parental incest. *J Genet Couns* 2013;23:489–495. doi:10.1007/s10897-013-9669-0
+12. Bennett RL, et al. Genetic counseling and screening of consanguineous couples and their offspring: focused revision. *J Genet Couns* 2021;30:1354–1357. doi:10.1002/jgc4.1477
+13. Ringbauer H, Novembre J, Steinrücken M. Parental relatedness through time revealed by runs of homozygosity in ancient DNA. *Nat Commun* 2021;12:5425. doi:10.1038/s41467-021-25289-w
+14. Schaaf CP, et al. Identification of incestuous parental relationships by SNP-based DNA microarrays. *Lancet* 2011. [verify authors/volume/pages]
+15. Palsson G, et al. Complete human recombination maps. *Nature* 2025;639(8055):700–707. doi:10.1038/s41586-024-08450-5
