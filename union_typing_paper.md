@@ -84,7 +84,7 @@ At **first degree it is essentially negligible**: the loop adds F ≈ ¼ on the 
 
 **Tail probabilities.** The whole-chromosome events (F_X=1, F_X=0) are computed in **closed form** (`xroh_tails.py`): FD/MS from the no-crossover probability of one/two meioses (½ e^{−Λ}, ½ e^{−2Λ}), SS fully-homozygous as ¼ e^{−3Λ}, and SS fully-outbred as the taboo survival probability of a three-telegraph Markov chain (the two autozygous states absorbing, via matrix exponential). These are exact and map-shape-independent. The gene-drop simulation validates them: the analytic value lies inside the **Wilson 95% CI** of the simulated proportion (n=300,000) for all six quantities. Simulated proportions are reported with Wilson intervals throughout (rather than the normal approximation, which fails in the small-Np tail).
 
-**Reproducibility.** `python xroh_sim.py` reproduces the catalogue, detection, crossover-count decomposition (with Wilson CIs), genotyped-relative experiment, the autosomal and whole-genome union typing, and the interference sweep; `python xroh_tails.py` reproduces the closed-form tails and the analytic-vs-simulation validation table; `python xroh_likelihood.py` reproduces the exact-likelihood classification on both maps.
+**Reproducibility.** `python xroh_sim.py` reproduces the catalogue, detection, crossover-count decomposition (with Wilson CIs), genotyped-relative experiment, the autosomal and whole-genome union typing, and the interference sweep; `python xroh_tails.py` reproduces the closed-form tails and the analytic-vs-simulation validation table; `python xroh_likelihood.py` reproduces the exact-likelihood classification on both maps; `xroh_realdata.py` builds a real 1000G chrX haplotype panel (streamed) and validates ROH calling on it (§4.6).
 
 ---
 
@@ -152,6 +152,10 @@ The sharpest is **Sund et al. (2013)**, whose motivating example is a female pat
 
 Two further reports corroborate the framing rather than the numbers. **Schaaf et al. (2011)** frame the forensic question around whether the mother was a minor or adult and a perpetrator who is "a father or brother" — supporting the maternal-identity/age prior of §6.1, and tellingly considering only father–daughter and sib–sib while **omitting mother–son**. **Chaves et al. (2024)**, detecting first-degree incest by autosomal homozygosity in a large cohort, **exclude the sex chromosomes** from the calculation — the standard practice that sets aside exactly the chromosome that carries the type signal.
 
+### 4.6 Real-haplotype check (1000 Genomes)
+
+To test that the result survives real human haplotype structure (linkage disequilibrium, the realistic allele-frequency spectrum), we dropped **real phased 1000 Genomes chrX haplotypes** through the FD/MS/SS pedigrees — so the union type is ground truth — genotyped the child at real SNP positions, and called ROH with the same PLINK-style caller (`xroh_realdata.py`; 400 phased haplotypes, 4,791 SNPs over a 22 Mb Xp region, n=150/union). The caller recovers true autozygosity essentially **unbiased**: detected F_roh vs true (region) = 0.579/0.575 (FD), 0.534/0.528 (MS), 0.272/0.249 (SS), and the **½/½/¼ ordering is preserved under real LD** (the small SS upward bias is the expected LD-driven short-ROH inflation). Classification over this single 22 Mb segment is underpowered — it carries only ~1/6 of the X's genetic length, so the regional F_X is high-variance (FD-vs-SS 0.63) — and reproducing the full-X accuracies of §4.4 requires a whole-chromosome panel (the pipeline streams it on demand). The point established here is that the **detection layer (true autozygosity → called ROH) holds on real genomes**, so the simulation's idealised tracks are a faithful proxy; what remains is to scale the real-haplotype panel to the whole X (and to autosomes) for an end-to-end real-data accuracy.
+
 ---
 
 ## 5. Relationship to prior work
@@ -203,7 +207,7 @@ One caution: any such case-context fact must enter as an **explicit prior and no
 ## 7. Limitations
 
 - Accuracies are for a **single** genome and are now from a direct joint gene-drop classifier for all three pairs (with 5-fold-CV standard errors), superseding the earlier d′-in-quadrature approximation, which they reproduce within ~0.01.
-- The genotype layer is simulated at realistic density; a real-data study (1000G/HGDP haplotypes, sex-aware X ROH calling, the companion project’s per-segment evidence model) is the next step.
+- The genotype layer is validated against real 1000G haplotypes for the *detection* step (§4.6: ROH calling recovers true autozygosity unbiased over a 22 Mb chrX segment); the remaining step is to scale the real-haplotype panel to the whole X and the autosomes for an end-to-end real-data classification accuracy (the `xroh_realdata.py` pipeline streams the whole chromosome on demand).
 - Crossover interference is modelled as gamma-renewal; the human interference parameter (ν ≈ 4–11; Housworth & Stahl 2003) and its known increase in deregulation with maternal age (Campbell et al. 2015) should anchor the ν used for final tail/ceiling claims. An obligate chiasma on the X further suppresses the zero-crossover class below the Haldane value, lowering the exact fully-homozygous-X probabilities (these are reported as Haldane upper bounds).
 - Elevating resolution from “first-degree” to a named union raises consent, reporting and psychosocial stakes; any application must engage the ELSI literature (Tarini 2013; Grote 2012/2014; Helm 2013; Bennett 2021).
 

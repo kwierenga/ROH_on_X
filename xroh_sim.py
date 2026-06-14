@@ -511,6 +511,61 @@ def genotyped_mother_experiment(n=4000, seed=23):
 
 
 # --------------------------------------------------------------------------
+# Multiple offspring. An incestuous union often yields several children. Full
+# sisters share the father's X *identically* (a father transmits his single X
+# intact to every daughter), but each gets an INDEPENDENT maternal recombination.
+# So multiple daughters do not add independent paternal-X observations, but they
+# collectively reveal the mother's two X homologs — which is what breaks FD vs MS
+# (under FD the shared paternal X equals one intact maternal homolog; under MS it
+# is a recombinant of both). Accuracy should climb from the single-child ceiling
+# toward the genotyped-mother ceiling as the sibship grows.
+# --------------------------------------------------------------------------
+def FD_family(k):
+    ff = Hx(); W = (Hx(), Hx()); M = (ff, son(W))      # mother = grandfather's daughter
+    return [female_child(ff, M) for _ in range(k)]     # shared paternal ff, independent maternal
+
+def MS_family(k):
+    M = (Hx(), Hx()); fX = son(M)                      # father = the son; his X fixed
+    return [female_child(fX, M) for _ in range(k)]
+
+def SS_family(k):
+    GF = Hx(); GM = (Hx(), Hx()); fX = son(GM); Z = (GF, son(GM))   # father = brother, mother = sister
+    return [female_child(fX, Z) for _ in range(k)]
+
+
+def _family_xfeatures(kids):
+    """Permutation-invariant X summary over a sibship (each kid's [F_X, #seg, max_cM])."""
+    fx, ns, mx = [], [], []
+    for pat, mat in kids:
+        sf = seg_features(pat, mat)                    # [n_seg, F_X, max_seg_cM, std_seg_cM]
+        fx.append(sf[1]); ns.append(sf[0]); mx.append(sf[2])
+    fx, ns, mx = np.array(fx), np.array(ns), np.array(mx)
+    return [fx.mean(), fx.std(), fx.min(), fx.max(), ns.mean(), ns.max(), mx.mean(), mx.max()]
+
+
+def multiple_offspring_typing(ks=(1, 2, 3, 5, 8), n=1200, seed=31):
+    """Single-genome -> sibship: X-only FD/MS/SS accuracy as a function of the
+    number of female children of the same union (shared paternal X, independent
+    maternal X). Shows how many sisters it takes to break the FD-vs-MS hard pair."""
+    from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.model_selection import cross_val_score
+    fams = {"father-daughter": FD_family, "mother-son": MS_family, "brother-sister": SS_family}
+    out = {}
+    for k in ks:
+        reset(seed)
+        feat = {nm: np.array([_family_xfeatures(fn(k)) for _ in range(n)]) for nm, fn in fams.items()}
+
+        def acc(a, b):
+            Xm = np.vstack([feat[a], feat[b]]); y = np.array([0] * n + [1] * n)
+            return float(cross_val_score(GradientBoostingClassifier(max_depth=3, n_estimators=120),
+                                         Xm, y, cv=5).mean())
+        out[k] = dict(FD_vs_MS=acc("father-daughter", "mother-son"),
+                      FD_vs_SS=acc("father-daughter", "brother-sister"),
+                      MS_vs_SS=acc("mother-son", "brother-sister"))
+    return out
+
+
+# --------------------------------------------------------------------------
 # Autosomal gene-drop (diploid, sex-specific maps) + whole-genome union typing.
 # All three first-degree unions have autosomal F=1/4, but the ROH SEGMENT
 # architecture orders them FD < MS < SS: parent-child loops span g=3 meioses,
