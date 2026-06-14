@@ -105,6 +105,30 @@ def validate_against_sim(n=300000, seed=11, tol=1e-6):
     return dict(L_cM=float(L), n=n, rows=rows)
 
 
+def p0_crossover(nu=None, n=400000, seed=3):
+    """Monte-Carlo P(0 crossovers on one female-X meiosis) under interference shape
+    nu (None/1 = Haldane, exact e^{-Lambda}). Higher nu (more regular spacing) lowers
+    P(0); strict obligate chiasma is the nu->inf limit P(0)->0."""
+    import xroh_sim as X
+    if X.XMAP is None:
+        X.init()
+    L = X.XMAP[4]
+    old = X.INTERFERENCE_NU
+    X.INTERFERENCE_NU = nu
+    X.reset(seed)
+    c = sum(1 for _ in range(n) if len(X._xover_cM(L)) == 0)
+    X.INTERFERENCE_NU = old
+    return c / n
+
+
+def tails_from_p0(p0):
+    """Fully-homozygous-X probabilities given P(0 crossovers)=p0, from the same
+    structure as the Haldane forms with e^{-Lambda} replaced by the realised p0:
+    FD needs one zero meiosis (1/2 p0), MS two (1/2 p0^2), SS three (1/4 p0^3)."""
+    return {"father-daughter": 0.5 * p0, "mother-son": 0.5 * p0 ** 2,
+            "brother-sister": 0.25 * p0 ** 3}
+
+
 if __name__ == "__main__":
     import xroh_sim as X
     X.init()
@@ -128,3 +152,14 @@ if __name__ == "__main__":
         ci = f"[{r['ci_lo']:.5f},{r['ci_hi']:.5f}]"
         print(f"{r['union']:16s}{r['event']:8s}{r['analytic']:>10.5f}{r['sim']:>10.5f}"
               f"{ci:>20}{'  yes' if r['inside'] else '  NO':>5}")
+
+    print("\nInterference sensitivity of P(F_X=1) (Haldane is an upper bound):")
+    print(f"{'model':>16}{'P(0 xover)':>12}{'FD':>9}{'MS':>9}{'SS':>10}{'FD:MS':>8}")
+    for label, nu in [("Haldane (nu=1)", None), ("nu=2.6", 2.6), ("nu=4.3", 4.3)]:
+        p0 = p0_crossover(nu=nu, n=300000)
+        t = tails_from_p0(p0)
+        ratio = t["father-daughter"] / t["mother-son"] if t["mother-son"] else float("inf")
+        print(f"{label:>16}{p0:>12.4f}{t['father-daughter']:>9.4f}{t['mother-son']:>9.4f}"
+              f"{t['brother-sister']:>10.5f}{ratio:>8.0f}")
+    print("(MS needs two zero-crossover meioses, so interference sharpens FD-vs-MS:"
+          " the fully-homozygous-X likelihood ratio is 1/p0.)")

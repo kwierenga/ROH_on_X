@@ -566,7 +566,11 @@ _X_PED = {"father-daughter": FD, "mother-son": MS, "brother-sister": SS}
 
 def genome_features(name, minlen=1.5e6):
     """One female child's whole-genome feature vector
-    [#autoROH, autoF, mean_ROH_Mb, max_ROH_Mb, F_X]. Requires init(autosomes=True)."""
+    [#autoROH, autoF, mean_ROH_Mb, max_ROH_Mb, F_X, X_nseg, X_max_seg_cM].
+    The autosomes carry loop depth (indices 0-3); the X carries the sex-path via
+    its autozygosity LEVEL (F_X, idx 4) and SEGMENT STRUCTURE (count + longest run,
+    idx 5-6) — so the joint classifier uses the full X signal, not F_X alone.
+    Requires init(autosomes=True)."""
     nroh, tot, span, lens = 0, 0.0, 0.0, []
     for c in range(1, 23):
         mpM, mpF = AUT[c]["M"], AUT[c]["F"]
@@ -577,36 +581,65 @@ def genome_features(name, minlen=1.5e6):
             if b - a >= minlen:
                 nroh += 1; lens.append(b - a)
     xp, xm = _X_PED[name]()
+    xseg = seg_features(xp, xm)              # [n_seg, F_X, max_seg_cM, std_seg_cM]
     return [nroh, tot / span, (np.mean(lens) / 1e6 if lens else 0.0),
-            (max(lens) / 1e6 if lens else 0.0), Fx(xp, xm)]
+            (max(lens) / 1e6 if lens else 0.0), xseg[1], xseg[0], xseg[2]]
 
 
 def autosomal_roh_by_union(n=250, seed=2024):
-    """Mean autosomal #ROH(>=1.5 Mb), length, autosomal F and F_X per union."""
+    """Mean autosomal #ROH(>=1.5 Mb), length, autosomal F and F_X per union, with
+    the SD and a normal 95% CI on the mean #ROH."""
     reset(seed)
     out = {}
     for nm in _AUTO_PED:
         r = np.array([genome_features(nm) for _ in range(n)])
-        out[nm] = dict(nroh=float(r[:, 0].mean()), autoF=float(r[:, 1].mean()),
-                       meanMb=float(r[:, 2].mean()), fx=float(r[:, 4].mean()))
+        nr = r[:, 0]; sd = float(nr.std(ddof=1)); se = sd / np.sqrt(n)
+        out[nm] = dict(nroh=float(nr.mean()), nroh_sd=sd,
+                       nroh_ci95=(float(nr.mean() - 1.96 * se), float(nr.mean() + 1.96 * se)),
+                       autoF=float(r[:, 1].mean()), meanMb=float(r[:, 2].mean()),
+                       fx=float(r[:, 4].mean()))
     return out
+
+
+def _acc_se(Xm, y, cv=5):
+    """5-fold CV accuracy with its cross-fold standard error (mean, SE)."""
+    from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.model_selection import cross_val_score
+    s = cross_val_score(GradientBoostingClassifier(max_depth=3, n_estimators=120), Xm, y, cv=cv)
+    return float(s.mean()), float(s.std(ddof=1) / np.sqrt(len(s)))
 
 
 def whole_genome_typing(n=600, seed=77):
     """FD-vs-SS single-genome accuracy from X only, autosomes only, and combined
-    (5-fold CV gradient boosting). Requires init(autosomes=True)."""
-    from sklearn.ensemble import GradientBoostingClassifier
-    from sklearn.model_selection import cross_val_score
-
+    (5-fold CV gradient boosting, each with cross-fold SE). init(autosomes=True)."""
+    reset(seed)
+    feats = np.array([genome_features("father-daughter") for _ in range(n)] +
+                     [genome_features("brother-sister") for _ in range(n)])
+    y = np.array([0] * n + [1] * n)
     def run(idx):
-        reset(seed)
-        feats = ([genome_features("father-daughter") for _ in range(n)] +
-                 [genome_features("brother-sister") for _ in range(n)])
-        Xm = np.array(feats)[:, idx]; y = np.array([0] * n + [1] * n)
-        return float(cross_val_score(GradientBoostingClassifier(max_depth=3, n_estimators=120),
-                                     Xm, y, cv=5).mean())
-    return dict(x_only=run([4]), auto_only=run([0, 1, 2, 3]),
-                whole_genome=run([0, 1, 2, 3, 4]))
+        a, se = _acc_se(feats[:, idx], y)
+        return dict(acc=a, se=se)
+    return dict(x_only=run([4, 5, 6]), auto_only=run([0, 1, 2, 3]),
+                whole_genome=run([0, 1, 2, 3, 4, 5, 6]))
+
+
+def whole_genome_all_pairs(n=600, seed=77):
+    """All three pairwise + the 3-way single-genome accuracies on the full
+    whole-genome feature vector [#autoROH, autoF, meanMb, maxMb, F_X], each with a
+    5-fold CV cross-fold SE. Replaces the d'-in-quadrature approximation for the
+    MS-vs-SS and FD-vs-MS combined figures. Requires init(autosomes=True)."""
+    reset(seed)
+    feats = {nm: np.array([genome_features(nm) for _ in range(n)])
+             for nm in ("father-daughter", "mother-son", "brother-sister")}
+    out = {}
+    for a, b, na, nb in [("FD", "MS", "father-daughter", "mother-son"),
+                         ("FD", "SS", "father-daughter", "brother-sister"),
+                         ("MS", "SS", "mother-son", "brother-sister")]:
+        acc, se = _acc_se(np.vstack([feats[na], feats[nb]]), np.array([0] * n + [1] * n))
+        out[f"{a}_vs_{b}"] = dict(acc=acc, se=se)
+    acc, se = _acc_se(np.vstack([feats[k] for k in feats]), np.array([0] * n + [1] * n + [2] * n))
+    out["three_way"] = dict(acc=acc, se=se)
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -646,14 +679,18 @@ if __name__ == "__main__":
     print(f"child only      acc={gm['child_only']:.3f}")
     print(f"+ genotyped mom acc={gm['with_mother']:.3f}")
 
-    print("\n=== Whole genome: autosomal ROH by union + FD-vs-SS typing ===")
+    print("\n=== Whole genome: autosomal ROH by union (mean #ROH +/- 95% CI) ===")
     init(autosomes=True)
     for nm, s in autosomal_roh_by_union(n=200).items():
-        print(f"{nm:16s} #ROH={s['nroh']:.1f}  meanMb={s['meanMb']:.1f}  "
+        lo, hi = s['nroh_ci95']
+        print(f"{nm:16s} #ROH={s['nroh']:.1f} [{lo:.1f},{hi:.1f}]  meanMb={s['meanMb']:.1f}  "
               f"autoF={s['autoF']:.3f}  F_X={s['fx']:.3f}")
     wg = whole_genome_typing(n=500)
-    print(f"FD-vs-SS  X-only={wg['x_only']:.3f}  autosomes={wg['auto_only']:.3f}  "
-          f"combined={wg['whole_genome']:.3f}")
+    print(f"FD-vs-SS  X-only={wg['x_only']['acc']:.3f}  autosomes={wg['auto_only']['acc']:.3f}  "
+          f"combined={wg['whole_genome']['acc']:.3f}+/-{wg['whole_genome']['se']:.3f}")
+    print("Joint classifier, all pairs + 3-way (acc +/- CV SE):")
+    for k, v in whole_genome_all_pairs(n=500).items():
+        print(f"  {k:10s} {v['acc']:.3f} +/- {v['se']:.3f}")
 
     print("\n=== Crossover-interference sensitivity (nu) ===")
     print(f"{'nu':>6} {'FD_meanFx':>10} {'FD_P(Fx>.99)':>13} {'FD/MS_fullinfo':>15}")
