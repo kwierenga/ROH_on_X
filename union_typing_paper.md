@@ -80,9 +80,9 @@ At **first degree it is essentially negligible**: the loop adds F ≈ ¼ on the 
 
 **X likelihood (`xroh_likelihood.py`).** The X is binned (0.5 Mb); per bin the single-meiosis switch probability is p_i = ½(1−e^{−2μ_i}), μ_i the local genetic length in Morgans. FD and MS likelihoods are closed-form telegraph products (flip probability p_i and 2p_i(1−p_i) respectively); SS is an 8-state HMM forward pass over the latent homolog telegraphs (V_B, V_Z, W_Z), all exact given the binning. Classification uses the maximum-posterior union at equal priors.
 
-**Autosomal ROH.** All 22 autosomes were gene-dropped through each pedigree; ROH segments ≥1.5 Mb were extracted per genome and counted/measured. Pairwise discriminability of the ROH count was summarised as d′ and the corresponding single-feature Bayes accuracy Φ(d′/2). Whole-genome accuracies combine the autosomal and X signals by adding d′ in quadrature (independence across chromosome sets; a joint simulation would refine these and is noted as future work).
+**Autosomal ROH.** All 22 autosomes were gene-dropped through each pedigree as **diploid** chromosomes with sex-specific maps (male meioses through males, female through females); ROH segments ≥1.5 Mb were extracted per genome and counted/measured (`autosomal_roh_by_union()`). Whole-genome accuracy was estimated two independent ways that agree: (i) combining the autosomal and X single-feature discriminabilities by adding d′ in quadrature (independence across chromosome sets), and (ii) a **direct joint gene-drop simulation** scoring one gradient-boosted classifier on the combined per-genome feature vector [# autosomal ROH, autosomal F, mean and max ROH length, F_X] (`whole_genome_typing()`). For FD vs SS the two estimates give 0.87 and 0.869; the joint simulation — previously noted as future work — now supersedes the quadrature approximation.
 
-**Reproducibility.** `python xroh_sim.py` reproduces the catalogue, detection, tails, genotyped-relative experiment and interference sweep; `python xroh_likelihood.py` reproduces the exact-likelihood classification on both maps.
+**Reproducibility.** `python xroh_sim.py` reproduces the catalogue, detection, tails, genotyped-relative experiment, the autosomal and whole-genome union typing, and the interference sweep; `python xroh_likelihood.py` reproduces the exact-likelihood classification on both maps.
 
 ---
 
@@ -102,6 +102,18 @@ The exact map-based likelihood classifier gives, on a single female X (0.5 Mb bi
 | 3-way | 0.573 | 0.570 |
 
 Two independent maps agree to ≈0.005 — the conclusion is map-robust. FD vs MS reaches exactly the analytic count-only ceiling (0.71), confirming §2.2: the spatial map cannot help that pair. The full-information tail is itself diagnostic: **P(F_X > 0.99) = 9.3% (FD) vs 2.0% (MS) vs 0.2% (SS)** — a near-fully-homozygous X is a strong FD signature (and explains the Sund 2013 “entirely homozygous X” girl).
+
+#### 4.2.1 Decomposition by crossover count: the all-zero corner
+
+The whole-chromosome outcomes are governed entirely by the **number of crossovers in the female-X meioses of the loop**, of which each union has a different count: FD is set by **one** meiosis (the maternal transmission, crossover count k ~ Poisson(λ), λ=1.76), MS by **two** independent meioses of the same mother (k₁+k₂), and SS by **three** (the operative one being k_s, the grandfather/grandmother mixing in the sister→child transmission). Conditioning F_X on these counts (`fx_by_crossover_count()`; n=80,000) shows that **both extremes live almost entirely in the all-zero corner**, and that the corner’s probability is what separates the unions:
+
+| union | governing meioses | P(all-zero) | E[F_X \| all-zero] | P(F_X=1) overall | P(F_X=0) overall |
+|---|---|---|---|---|---|
+| FD | 1 (k) | e^{−λ} = 0.17 | ½ → {1 or 0}, 50/50 | **0.095** | 0.095 |
+| MS | 2 (k₁+k₂) | e^{−2λ} = 0.029 | ½ → {1 or 0}, 50/50 | 0.020 | 0.020 |
+| SS | 3 (k_s …) | 0.17 (k_s) | 0.25; F_X=1 needs coincidence | **0.002** | **0.203** |
+
+Three facts fall out. (i) A 0-crossover maternal transmission under **FD** is a coin flip between an **entirely homozygous** X (grandfather strand) and an **entirely outbred-looking** X (great-grandmother strand): P(F_X=1)=P(F_X=0)≈½·e^{−λ}≈8.6%. (ii) **MS** needs the *same* zero event in **two** meioses (e^{−2λ}), making its homozygous tail ~5× rarer than FD’s — the quantitative core of the FD-vs-MS hard pair seen from the tail. (iii) **SS is asymmetric**: the grandfather’s X is a one-sided structural intrusion that can never be autozygous, so a fully homozygous X is essentially impossible (0.2%) while a fully *outbred* X is common (20%). Consequently the two extremes **invert the diagnosis**: a fully homozygous X gives FD:MS:SS ≈ **48:10:1** (toward father–daughter), whereas a fully outbred X gives SS:FD:MS ≈ **10:5:1** (toward sibling). The mean F_X is invariant to crossover count (½/½/¼ within every count class) — the union-type information the mean discards is entirely in the variance and these tails.
 
 ### 4.3 The autosomes give the loop depth
 Autosomal ROH (≥1.5 Mb; n=250/union; sex-specific maps):
@@ -123,7 +135,7 @@ Combining autosomes and X (quadrature):
 | MS vs SS | 0.69 | 0.72 | **≈0.77** |
 | FD vs MS | 0.65 | 0.71 | **≈0.75** |
 
-Sib–sib is well separated from both parent–child types; **father–daughter versus mother–son is the irreducible hard core**. In casework a genotyped birth mother breaks even that pair, lifting FD vs MS to **0.91**, because the child’s paternal X is an *intact* maternal homolog under FD but a *recombinant mosaic* of the mother’s two homologs under MS (an observable switch count of ~0 vs ~Poisson). Crossover interference (gamma-renewal, ν=2.6–4.3) leaves the means at ½/½/¼ but tightens segment spacing, modestly raising the FD/MS ceiling (0.69→0.76) while shrinking the FD homozygous-X tail (0.093→0.014).
+The combined FD-vs-SS figure is confirmed by the direct joint simulation (0.869; X-only 0.63 and autosomes-only 0.84 on the same run), not only by the quadrature estimate. Sib–sib is well separated from both parent–child types; **father–daughter versus mother–son is the irreducible hard core**. In casework a genotyped birth mother breaks even that pair, lifting FD vs MS to **0.91**, because the child’s paternal X is an *intact* maternal homolog under FD but a *recombinant mosaic* of the mother’s two homologs under MS (an observable switch count of ~0 vs ~Poisson). Crossover interference (gamma-renewal, ν=2.6–4.3) leaves the means at ½/½/¼ but tightens segment spacing, with three consequences: it modestly raises the FD/MS ceiling (0.69→0.76), shrinks the FD homozygous-X tail (P(F_X>0.99) 0.093→0.015), and — because sharper F_X distributions are easier to separate — *raises* the X-only FD-vs-SS accuracy (0.64→0.70). So the Haldane (no-interference) defaults used throughout are the **conservative** end: realistic interference improves resolution of every contrast except the fully-homozygous-X tail probability, which it lowers.
 
 ---
 
@@ -167,7 +179,7 @@ Two results are, to our knowledge, new: the **exact likelihood with the FD/MS sp
 
 ## 7. Limitations
 
-- Accuracies are for a **single** genome; the whole-genome combination assumes independence across chromosome sets and uses a Gaussian d′ approximation — a joint simulation/likelihood would refine the exact numbers.
+- Accuracies are for a **single** genome. The FD-vs-SS whole-genome figure is now from a direct joint gene-drop classifier (0.869), agreeing with the earlier quadrature estimate; the MS-vs-SS and FD-vs-MS combined figures still use the d′-in-quadrature approximation and would be refined by the same joint treatment.
 - The genotype layer is simulated at realistic density; a real-data study (1000G/HGDP haplotypes, sex-aware X ROH calling, the companion project’s per-segment evidence model) is the next step.
 - Crossover interference is modelled as gamma-renewal; the literature ν should be fixed against Campbell 2015 (verify) before final tail/ceiling claims.
 - Elevating resolution from “first-degree” to a named union raises consent, reporting and psychosocial stakes; any application must engage the ELSI literature (Tarini 2013; Grote 2012/2014; Helm 2013; Bennett 2021).

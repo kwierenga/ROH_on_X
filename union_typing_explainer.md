@@ -62,6 +62,16 @@ When you write down that calculation for FD vs MS, something clean happens: the 
 
 For **FD vs SS** (and MS vs SS) the map does **not** cancel — the stories differ in the total amount of matching and in their structure — so the full pattern helps. This is the good news, because…
 
+### A closer look at the seam count: the “zero-shuffle” corner
+
+Every seam is a shuffling (recombination) event, and on the female X the number of those events per copy is a lottery: about **17% of the time zero, 30% once, 27% twice, 16% three times**, and so on (it averages 1.76). The whole story turns on the **zero** outcome — and each union reaches it differently:
+
+- **Father–daughter** depends on **one** such lottery (the mother’s single transmission). When it comes up zero, the mother hands over one of her two X’s *whole* — a coin flip between her father’s copy (→ the girl’s X is **entirely matching**) and her mother’s copy (→ **entirely non-matching**). Each happens ~8.6% of the time.
+- **Mother–son** depends on **two** lotteries both coming up zero — much rarer (~2%). That’s the simple reason a fully-homozygous X points to father–daughter over mother–son by about **5 to 1**.
+- **Brother–sister** is lopsided: the grandfather’s X rides along on one side and can *never* match, so an entirely-matching X is essentially impossible (~0.2%), while an entirely-*non*-matching one is common (~20%).
+
+So the two extremes point opposite ways: an **entirely homozygous** X shouts *father–daughter* (≈48:10:1 over mother–son and sibling), while an **entirely outbred-looking** X leans *sibling*. And note the average is unmoved — it stays ½, ½, ¼ no matter how the shuffling lottery falls — which is exactly why the plain average hides the answer and the *spread* reveals it.
+
 ---
 
 ## Step 6 — The autosomes are not blind after all (two hidden signals)
@@ -113,6 +123,7 @@ Father–daughter vs mother–son is stuck **from the child alone**. But add **o
 
 - The core inheritance numbers (½, ½, ¼) **match theory exactly** in simulation — that agreement is the built-in correctness check.
 - Everything was checked on **two independent recombination maps** (Bhérer and deCODE), which agree to within half a percent — so the conclusions don’t depend on map choice.
+- The ~0.87 “father–daughter vs sibling” headline is now confirmed by a **single combined simulation** that drops all 22 autosomes *and* the X through each family and lets one classifier read the whole genome — not just by adding the two chromosomes’ scores together. And it is a **conservative** number: when we use a more realistic recombination model (where shuffling events repel each other, as they really do), the resolution gets slightly *better*, not worse.
 - The honest limits: these are single-genome accuracies; the genotype data here are realistically simulated, not yet real patient data; and turning “first-degree” into a *named* relationship raises real consent and reporting questions that any use must respect.
 
 **In one sentence:** the autosomes tell you *how deep* the family loop is, the X tells you *which sexes* it ran through, and together — from a single girl’s genome — they reveal not just *that* the parents were first-degree relatives, but *which kind*, with the most important distinction being the clearest.

@@ -338,6 +338,66 @@ def fx_tail_stats(n=40000, seed=7):
     return out
 
 
+def fx_by_crossover_count(n=60000, seed=1):
+    """Decompose F_X by the per-meiosis crossover count of each union.
+
+    FD is governed by ONE female-X meiosis (maternal transmission, count k), MS by
+    TWO meioses of the same mother (k1+k2), SS by THREE (the GF/grandmother mixing
+    count ks is the structural switch). The whole-chromosome outcomes (F_X=1 fully
+    homozygous, F_X=0 fully outbred) live almost entirely in the all-zero corner:
+    FD needs e^{-λ}, MS needs e^{-2λ}, and SS can essentially never be F_X=1 (the
+    grandfather's X is a one-sided intrusion that blocks homozygosity). Returns
+    {union: {k: dict(p, mean, p_fx1, p_fx0)}} with the governing count as key."""
+    POS, CM, P0, P1, Lm = XMAP
+
+    def cmeiosis(hA, hB):                    # meiosis() that also returns crossover count
+        cm_x = _xover_cM(Lm); k = len(cm_x)
+        xs = sorted(np.interp(cm_x, CM, POS)) if k else []
+        bnd = [P0] + list(xs) + [P1]; par = [hA, hB]; s = int(RNG.integers(2)); seg = []
+        for j in range(len(bnd) - 1):
+            a, b = bnd[j], bnd[j + 1]; h = par[(s + j) % 2]
+            for i, (st, lab) in enumerate(h):
+                e = h[i + 1][0] if i + 1 < len(h) else P1
+                if e <= a or st >= b: continue
+                if not seg or seg[-1][1] != lab: seg.append((max(st, a), lab))
+        if seg[0][0] > P0: seg[0] = (P0, seg[0][1])
+        return seg, k
+
+    def FD_c():                              # governing count: maternal meiosis km
+        G = Hx(); W = (Hx(), Hx()); Wson, _ = cmeiosis(*W)
+        Omat, km = cmeiosis(G, Wson); return Fx(G, Omat), km
+
+    def MS_c():                              # governing count: k1+k2 (same mother)
+        M = (Hx(), Hx()); Op, k1 = cmeiosis(*M); Om, k2 = cmeiosis(*M); return Fx(Op, Om), k1 + k2
+
+    def SS_c():                              # governing count: ks (GF/grandmother mixing)
+        GF = Hx(); GM = (Hx(), Hx()); Op, _ = cmeiosis(*GM); U, _ = cmeiosis(*GM)
+        Om, ks = cmeiosis(GF, U); return Fx(Op, Om), ks
+
+    reset(seed)
+    out = {}
+    for nm, fn in [("father-daughter", FD_c), ("mother-son", MS_c), ("brother-sister", SS_c)]:
+        fxv = np.empty(n); kv = np.empty(n, int)
+        for i in range(n):
+            fxv[i], kv[i] = fn()
+        d = {}
+        for k in range(0, 5):
+            m = kv == k
+            if m.any():
+                f = fxv[m]
+                d[k] = dict(p=float(m.mean()), mean=float(f.mean()),
+                            p_fx1=float(np.mean(f > 0.99)), p_fx0=float(np.mean(f < 0.01)))
+        m = kv >= 5
+        if m.any():
+            f = fxv[m]
+            d["5+"] = dict(p=float(m.mean()), mean=float(f.mean()),
+                           p_fx1=float(np.mean(f > 0.99)), p_fx0=float(np.mean(f < 0.01)))
+        d["overall"] = dict(p=1.0, mean=float(fxv.mean()),
+                            p_fx1=float(np.mean(fxv > 0.99)), p_fx0=float(np.mean(fxv < 0.01)))
+        out[nm] = d
+    return out
+
+
 # --------------------------------------------------------------------------
 # Genotyped-mother experiment: does observing the birth mother's X break the
 # father-daughter vs mother-son degeneracy? Mechanism: the child's PATERNAL X
@@ -435,6 +495,105 @@ def genotyped_mother_experiment(n=4000, seed=23):
 
 
 # --------------------------------------------------------------------------
+# Autosomal gene-drop (diploid, sex-specific maps) + whole-genome union typing.
+# All three first-degree unions have autosomal F=1/4, but the ROH SEGMENT
+# architecture orders them FD < MS < SS: parent-child loops span g=3 meioses,
+# sib-sib g=4 (shorter, more numerous ROH), and within g=3 the MS loop routes
+# more FEMALE meioses (the female map is ~1.6x longer) so it fragments slightly
+# more than FD. Requires init(autosomes=True). Reproduces the paper's autosomal
+# (#ROH FD~26 < MS~30 < SS~35) and whole-genome (FD-vs-SS ~0.87) numbers.
+# --------------------------------------------------------------------------
+def _seg_ibd(pat, mat, P0, P1):
+    """IBD segments (bp) where two diploid copies share a founder label."""
+    bks = sorted(set([s for s, _ in pat] + [s for s, _ in mat] + [P1]))
+
+    def lab(h, x):
+        c = h[0][1]
+        for s, l in h:
+            if s <= x: c = l
+            else: break
+        return c
+    segs, cur = [], None
+    for j in range(len(bks) - 1):
+        a, b = bks[j], bks[j + 1]
+        if lab(pat, a) == lab(mat, a):
+            cur = [a, b] if cur is None else [cur[0], b]
+        elif cur is not None:
+            segs.append(tuple(cur)); cur = None
+    if cur is not None:
+        segs.append(tuple(cur))
+    return segs
+
+
+def auto_FD(mpM, mpF):                       # common ancestor = grandfather G; g=3
+    g1, g2 = founder(mpM), founder(mpM); w1, w2 = founder(mpF), founder(mpF)
+    Mpat = meiosis(g1, g2, mpM); Mmat = meiosis(w1, w2, mpF)   # mother = G x W
+    return meiosis(g1, g2, mpM), meiosis(Mpat, Mmat, mpF)      # child: from G, from mother
+
+
+def auto_MS(mpM, mpF):                       # common ancestor = mother M; g=3
+    f1, f2 = founder(mpF), founder(mpF); u = founder(mpM)      # mother M, unrelated grandfather
+    Spat, Smat = u, meiosis(f1, f2, mpF)                       # son = u x M
+    return meiosis(Spat, Smat, mpM), meiosis(f1, f2, mpF)      # child: from son, from M
+
+
+def auto_SS(mpM, mpF):                       # common ancestors = both grandparents; g=4
+    a1, a2 = founder(mpM), founder(mpM); b1, b2 = founder(mpF), founder(mpF)
+    Bpat, Bmat = meiosis(a1, a2, mpM), meiosis(b1, b2, mpF)    # brother
+    Zpat, Zmat = meiosis(a1, a2, mpM), meiosis(b1, b2, mpF)    # sister
+    return meiosis(Bpat, Bmat, mpM), meiosis(Zpat, Zmat, mpF)  # child: from brother, from sister
+
+
+_AUTO_PED = {"father-daughter": auto_FD, "mother-son": auto_MS, "brother-sister": auto_SS}
+_X_PED = {"father-daughter": FD, "mother-son": MS, "brother-sister": SS}
+
+
+def genome_features(name, minlen=1.5e6):
+    """One female child's whole-genome feature vector
+    [#autoROH, autoF, mean_ROH_Mb, max_ROH_Mb, F_X]. Requires init(autosomes=True)."""
+    nroh, tot, span, lens = 0, 0.0, 0.0, []
+    for c in range(1, 23):
+        mpM, mpF = AUT[c]["M"], AUT[c]["F"]
+        P0, P1 = mpF[2], mpF[3]; span += P1 - P0
+        cp, cm = _AUTO_PED[name](mpM, mpF)
+        for a, b in _seg_ibd(cp, cm, P0, P1):
+            tot += b - a
+            if b - a >= minlen:
+                nroh += 1; lens.append(b - a)
+    xp, xm = _X_PED[name]()
+    return [nroh, tot / span, (np.mean(lens) / 1e6 if lens else 0.0),
+            (max(lens) / 1e6 if lens else 0.0), Fx(xp, xm)]
+
+
+def autosomal_roh_by_union(n=250, seed=2024):
+    """Mean autosomal #ROH(>=1.5 Mb), length, autosomal F and F_X per union."""
+    reset(seed)
+    out = {}
+    for nm in _AUTO_PED:
+        r = np.array([genome_features(nm) for _ in range(n)])
+        out[nm] = dict(nroh=float(r[:, 0].mean()), autoF=float(r[:, 1].mean()),
+                       meanMb=float(r[:, 2].mean()), fx=float(r[:, 4].mean()))
+    return out
+
+
+def whole_genome_typing(n=600, seed=77):
+    """FD-vs-SS single-genome accuracy from X only, autosomes only, and combined
+    (5-fold CV gradient boosting). Requires init(autosomes=True)."""
+    from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.model_selection import cross_val_score
+
+    def run(idx):
+        reset(seed)
+        feats = ([genome_features("father-daughter") for _ in range(n)] +
+                 [genome_features("brother-sister") for _ in range(n)])
+        Xm = np.array(feats)[:, idx]; y = np.array([0] * n + [1] * n)
+        return float(cross_val_score(GradientBoostingClassifier(max_depth=3, n_estimators=120),
+                                     Xm, y, cv=5).mean())
+    return dict(x_only=run([4]), auto_only=run([0, 1, 2, 3]),
+                whole_genome=run([0, 1, 2, 3, 4]))
+
+
+# --------------------------------------------------------------------------
 if __name__ == "__main__":
     init()
     print("Female X map length:", round(XMAP[4], 1), "cM\n")
@@ -458,10 +617,27 @@ if __name__ == "__main__":
         print(f"{nm:16s} mean={s['mean']:.3f}  P(Fx>0.99)={s['p_gt99']:.3f}  "
               f"P(Fx>0.95)={s['p_gt95']:.3f}  P(Fx<0.05)={s['p_lt05']:.3f}")
 
+    print("\n=== F_X decomposed by governing crossover count (the all-zero corner) ===")
+    for nm, d in fx_by_crossover_count(n=60000).items():
+        z = d.get(0, {})
+        ov = d["overall"]
+        print(f"{nm:16s} k=0: P={z.get('p',0):.3f} P(Fx=1)={z.get('p_fx1',0):.3f} "
+              f"P(Fx=0)={z.get('p_fx0',0):.3f}  |  overall P(Fx=1)={ov['p_fx1']:.3f} "
+              f"P(Fx=0)={ov['p_fx0']:.3f}")
+
     print("\n=== Genotyped-mother experiment: FD vs MS (chance=0.50) ===")
     gm = genotyped_mother_experiment(n=4000)
     print(f"child only      acc={gm['child_only']:.3f}")
     print(f"+ genotyped mom acc={gm['with_mother']:.3f}")
+
+    print("\n=== Whole genome: autosomal ROH by union + FD-vs-SS typing ===")
+    init(autosomes=True)
+    for nm, s in autosomal_roh_by_union(n=200).items():
+        print(f"{nm:16s} #ROH={s['nroh']:.1f}  meanMb={s['meanMb']:.1f}  "
+              f"autoF={s['autoF']:.3f}  F_X={s['fx']:.3f}")
+    wg = whole_genome_typing(n=500)
+    print(f"FD-vs-SS  X-only={wg['x_only']:.3f}  autosomes={wg['auto_only']:.3f}  "
+          f"combined={wg['whole_genome']:.3f}")
 
     print("\n=== Crossover-interference sensitivity (nu) ===")
     print(f"{'nu':>6} {'FD_meanFx':>10} {'FD_P(Fx>.99)':>13} {'FD/MS_fullinfo':>15}")
