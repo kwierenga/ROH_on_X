@@ -202,6 +202,10 @@ The birth mother’s **age** points the same way as a weaker, secondary prior �
 
 One caution: any such case-context fact must enter as an **explicit prior and not be double-counted** — if the mother’s circumstances are what raised suspicion, they cannot also serve as independent corroboration — and the genomic likelihood, conditionally independent of how the case came to attention, remains the evidentiary core.
 
+### 6.2 Calibrated likelihood ratios for casework
+
+A forensic report needs a *calibrated* likelihood ratio: when the method states P(FD)=0.9 it should be right about 90% of the time. The exact-likelihood posterior (§2.2) is well-calibrated **when the recombination model matches the data** — simulating and scoring under Haldane gives an expected calibration error (ECE) of **0.013** (`xroh_posterior.py`). It degrades under **model mismatch**: data generated with realistic crossover interference (ν=4.3) but scored with the Haldane likelihood is miscalibrated (ECE **0.16**, in the conservative/underconfident direction — a stated confidence of 0.54 corresponds to an empirical accuracy of 0.72). The practical implication is concrete and was not obvious a priori: the headline *accuracies* are robust to (indeed improved by) interference, but the *calibrated probabilities* are not — **court-grade LRs require the likelihood itself to use a realistic, interference-aware recombination map**, anchored to a measured ν (Housworth & Stahl 2003; Campbell et al. 2015) or, better, the empirical female-X crossover-count distribution. Folding in the §6.1 maternal prior is then immediate: a young birth mother sets the MS prior to ≈0, collapsing the three-way problem (accuracy 0.57) to the well-separated **FD-vs-SS** pair (0.74) — the genome answers precisely the question that remains once the non-genomic facts have removed mother–son.
+
 ---
 
 ## 7. Limitations
