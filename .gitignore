@@ -7,3 +7,9 @@ __pycache__/
 
 # Quarantined off-topic / misfiled PDFs
 docs/_misfiled/
+
+# Secrets — never commit tokens/credentials
+*token*.txt
+*secret*
+*.pem
+.env
