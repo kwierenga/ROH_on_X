@@ -21,6 +21,18 @@ import os, tarfile, urllib.request
 import numpy as np
 import pandas as pd
 
+
+def wilson_ci(k, n, z=1.96):
+    """Wilson score 95% interval for a binomial proportion — correct in the
+    small-Np tail where the normal approximation fails. Returns (lo, hi)."""
+    if n == 0:
+        return (0.0, 1.0)
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return (max(0.0, c - h), min(1.0, c + h))
+
 # --------------------------------------------------------------------------
 # Data: Bhérer et al. 2017 refined sex-specific map (GRCh37). chrX is FEMALE-only
 # (no male/sexavg X exists, because the non-PAR X recombines only in females).
@@ -375,7 +387,16 @@ def fx_by_crossover_count(n=60000, seed=1):
         Om, ks = cmeiosis(GF, U); return Fx(Op, Om), ks
 
     reset(seed)
+    tol = 1e-6                               # exact extremes, not >0.99 (avoids telomere slivers)
     out = {}
+
+    def cell(f, n_tot):
+        n_c = len(f)
+        k1 = int(np.sum(f >= 1 - tol)); k0 = int(np.sum(f <= tol))
+        return dict(p=n_c / n_tot, n=n_c, mean=float(f.mean()),
+                    p_fx1=k1 / n_c if n_c else 0.0, ci_fx1=wilson_ci(k1, n_c),
+                    p_fx0=k0 / n_c if n_c else 0.0, ci_fx0=wilson_ci(k0, n_c))
+
     for nm, fn in [("father-daughter", FD_c), ("mother-son", MS_c), ("brother-sister", SS_c)]:
         fxv = np.empty(n); kv = np.empty(n, int)
         for i in range(n):
@@ -384,16 +405,11 @@ def fx_by_crossover_count(n=60000, seed=1):
         for k in range(0, 5):
             m = kv == k
             if m.any():
-                f = fxv[m]
-                d[k] = dict(p=float(m.mean()), mean=float(f.mean()),
-                            p_fx1=float(np.mean(f > 0.99)), p_fx0=float(np.mean(f < 0.01)))
+                d[k] = cell(fxv[m], n)
         m = kv >= 5
         if m.any():
-            f = fxv[m]
-            d["5+"] = dict(p=float(m.mean()), mean=float(f.mean()),
-                           p_fx1=float(np.mean(f > 0.99)), p_fx0=float(np.mean(f < 0.01)))
-        d["overall"] = dict(p=1.0, mean=float(fxv.mean()),
-                            p_fx1=float(np.mean(fxv > 0.99)), p_fx0=float(np.mean(fxv < 0.01)))
+            d["5+"] = cell(fxv[m], n)
+        d["overall"] = cell(fxv, n)
         out[nm] = d
     return out
 
@@ -617,13 +633,13 @@ if __name__ == "__main__":
         print(f"{nm:16s} mean={s['mean']:.3f}  P(Fx>0.99)={s['p_gt99']:.3f}  "
               f"P(Fx>0.95)={s['p_gt95']:.3f}  P(Fx<0.05)={s['p_lt05']:.3f}")
 
-    print("\n=== F_X decomposed by governing crossover count (the all-zero corner) ===")
+    print("\n=== F_X decomposed by governing crossover count (exact extremes, Wilson 95% CI) ===")
     for nm, d in fx_by_crossover_count(n=60000).items():
-        z = d.get(0, {})
-        ov = d["overall"]
-        print(f"{nm:16s} k=0: P={z.get('p',0):.3f} P(Fx=1)={z.get('p_fx1',0):.3f} "
-              f"P(Fx=0)={z.get('p_fx0',0):.3f}  |  overall P(Fx=1)={ov['p_fx1']:.3f} "
-              f"P(Fx=0)={ov['p_fx0']:.3f}")
+        z = d.get(0, {}); ov = d["overall"]
+        lo, hi = ov["ci_fx1"]
+        print(f"{nm:16s} k=0: P={z.get('p',0):.3f} P(Fx=1|k0)={z.get('p_fx1',0):.3f}  |  "
+              f"overall P(Fx=1)={ov['p_fx1']:.4f} [{lo:.4f},{hi:.4f}]  "
+              f"P(Fx=0)={ov['p_fx0']:.4f}")
 
     print("\n=== Genotyped-mother experiment: FD vs MS (chance=0.50) ===")
     gm = genotyped_mother_experiment(n=4000)

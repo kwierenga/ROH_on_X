@@ -66,11 +66,11 @@ For **FD vs SS** (and MS vs SS) the map does **not** cancel — the stories diff
 
 Every seam is a shuffling (recombination) event, and on the female X the number of those events per copy is a lottery: about **17% of the time zero, 30% once, 27% twice, 16% three times**, and so on (it averages 1.76). The whole story turns on the **zero** outcome — and each union reaches it differently:
 
-- **Father–daughter** depends on **one** such lottery (the mother’s single transmission). When it comes up zero, the mother hands over one of her two X’s *whole* — a coin flip between her father’s copy (→ the girl’s X is **entirely matching**) and her mother’s copy (→ **entirely non-matching**). Each happens ~8.6% of the time.
-- **Mother–son** depends on **two** lotteries both coming up zero — much rarer (~2%). That’s the simple reason a fully-homozygous X points to father–daughter over mother–son by about **5 to 1**.
-- **Brother–sister** is lopsided: the grandfather’s X rides along on one side and can *never* match, so an entirely-matching X is essentially impossible (~0.2%), while an entirely-*non*-matching one is common (~20%).
+- **Father–daughter** depends on **one** such lottery (the mother’s single transmission). When it comes up zero, the mother hands over one of her two X’s *whole* — a coin flip between her father’s copy (→ the girl’s X is **entirely matching**) and her mother’s copy (→ **entirely non-matching**). Each happens **8.6%** of the time.
+- **Mother–son** depends on **two** lotteries both coming up zero — much rarer (**1.5%**). That’s the simple reason a fully-homozygous X points to father–daughter over mother–son by about **6 to 1**.
+- **Brother–sister** is lopsided: the grandfather’s X rides along on one side and can *never* match, so an entirely-matching X is essentially impossible (**0.13%**), while an entirely-*non*-matching one is common (**18%**).
 
-So the two extremes point opposite ways: an **entirely homozygous** X shouts *father–daughter* (≈48:10:1 over mother–son and sibling), while an **entirely outbred-looking** X leans *sibling*. And note the average is unmoved — it stays ½, ½, ¼ no matter how the shuffling lottery falls — which is exactly why the plain average hides the answer and the *spread* reveals it.
+So the two extremes point opposite ways: an **entirely homozygous** X shouts *father–daughter* (about **68:12:1** over mother–son and sibling), while an **entirely outbred-looking** X leans *sibling* (about **12:6:1**). These aren’t simulation guesses — they are exact formulas from the recombination process, confirmed by the simulation to the third decimal. And note the average is unmoved — it stays ½, ½, ¼ no matter how the shuffling lottery falls — which is exactly why the plain average hides the answer and the *spread* reveals it.
 
 ---
 
