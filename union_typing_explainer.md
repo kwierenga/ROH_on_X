@@ -110,6 +110,8 @@ The headline: the **most consequential question — father–daughter versus sib
 
 Father–daughter vs mother–son is stuck **from the child alone**. But add **one genotyped relative — the birth mother — and it jumps to ~0.91.** The reason is elegant: under father–daughter, the girl’s intact paternal X is a perfect, unshuffled copy of one of her mother’s X’s; under mother–son, it’s a *shuffled mix* of both. Counting how many times the girl’s paternal X “switches” between her mother’s two X’s gives the answer: about zero (father–daughter) versus several (mother–son). The child’s genome can’t show this; the child plus mother can.
 
+And there is a second, entirely non-genetic clue that points at the *same* hard pair — the mother’s **age**. The woman who carries and gives birth to the child is the perpetrator’s *daughter* in a father–daughter case and his *sister* in a sibling case — in both she is of the younger generation, possibly a teenager. But in a mother–son case she is the *older* woman, who already has a grown-up son. So **a young mother argues strongly against mother–son** — exactly the comparison the genome alone can’t make. It’s lopsided help (a young mother is very telling; an older one is ambiguous, since a father’s daughter can be older too), but it lands where it’s needed. It also helps that the mother is almost always known — she was pregnant and gave birth — while the father is often unknown, which is *why* genotyping the mother (above) is usually the realistic route. The rule is to use these facts as honest, up-front priors and not to count the same clue twice (if a strikingly young mother is what raised the alarm, it can’t then be re-used as fresh proof).
+
 ---
 
 ## Step 9 — Why this matters, and the irony

@@ -179,6 +179,16 @@ The information needed to type a first-degree union is present in a single femal
 
 Two results are, to our knowledge, new: the **exact likelihood with the FD/MS spatial cancellation** (which converts “FD vs MS is hard” from an empirical observation into a theorem), and the **autosomal sex-path trace** (a daughter’s autosomal ROH count weakly encodes whether the loop ran father-side or mother-side, via sex-specific recombination).
 
+### 6.1 The genome is not read in a vacuum: case-context priors attack the same hard pair
+
+The single-genome accuracies above are deliberately conservative in that they use *only* the genome. In practice two non-genomic facts are almost always available, and — usefully — both bear most on **father–daughter versus mother–son**, the one pair the genome cannot resolve.
+
+**Birth-mother age.** The woman who gestates the child is the perpetrator’s *daughter* under FD and his *sister* under SS — both of the offspring generation, hence potentially as young as menarche — but under MS she is the *older* woman, who by construction already has a reproductive-age son (realistically ≥ ~28–30). A **young birth mother therefore argues strongly against mother–son**, directly attacking the FD/MS degeneracy that the X likelihood proves is genetically irreducible (§2.2). The signal is asymmetric — a young mother is highly informative (toward FD/SS) while an older mother is ambiguous (an FD daughter may also be older) — but it is information precisely where the genome has none.
+
+**Maternal observability.** Pregnancy and birth identify the mother; the father (the perpetrator under FD, the son under MS) is frequently unknown or unavailable. So the genotyped-mother power result (FD vs MS → 0.91, §4.4) is usually the *actionable* path — the mother is the relative one can obtain — and even when her genome is unavailable her **age** generally is. These priors are independent of the genomic likelihood and combine multiplicatively into the posterior.
+
+Two cautions. First, they must enter as **explicit Bayesian priors and not be double-counted**: if an unusually young mother is what raised suspicion, that fact cannot also serve as independent corroborating evidence. Second, demographic and case-ascertainment context can itself be biasing, so the genomic likelihood — which is conditionally independent of how the case arose — remains the evidentiary core, with age/identity priors layered on transparently rather than implicitly.
+
 ---
 
 ## 7. Limitations
