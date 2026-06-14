@@ -103,7 +103,7 @@ The exact map-based likelihood classifier gives, on a single female X (0.5 Mb bi
 | FD vs MS | 0.710 | 0.712 |
 | 3-way | 0.573 | 0.570 |
 
-Two independent maps agree to ≈0.005 — the conclusion is map-robust. FD vs MS reaches exactly the analytic count-only ceiling (0.71), confirming §2.2: the spatial map cannot help that pair. The full-information tail is itself diagnostic: at the operational threshold F_X > 0.99, **P = 9.6% (FD) vs 2.0% (MS) vs 0.2% (SS)**; the *exact* fully-homozygous probabilities are 8.6/1.5/0.13% (closed forms, §4.2.1). Either way a near-fully-homozygous X is a strong FD signature (and explains the Sund 2013 “entirely homozygous X” girl).
+Two independent maps agree to ≈0.005 — the conclusion is map-robust. FD vs MS reaches exactly the analytic count-only ceiling (0.71), confirming §2.2: the spatial map cannot help that pair. The full-information tail is itself diagnostic: at the operational threshold F_X > 0.99, **P = 9.3% (FD) vs 2.0% (MS) vs 0.2% (SS)**; the *exact* fully-homozygous probabilities are 8.6/1.5/0.13% (closed forms, §4.2.1). Either way a near-fully-homozygous X is a strong FD signature (and explains the Sund 2013 “entirely homozygous X” girl).
 
 #### 4.2.1 Decomposition by crossover count: the all-zero corner
 
